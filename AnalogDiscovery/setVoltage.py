@@ -9,7 +9,7 @@ def powerOn(device: dwf.Device):
     device.analog_io[0][0].value = True
     device.analog_io.master_enable = True
 
-def setVoltage(device: dwf.Device, channel: int = 0, voltage: float = 0.0) -> float:
+def setVoltage(device: dwf.Device, input_channel: int = 0, output_channel: int = 0, voltage: float = 0.0) -> float:
     """
     Set DC voltage on specified wavegen channel (W1 = channel 0, W2 = channel 1)
     
@@ -27,7 +27,7 @@ def setVoltage(device: dwf.Device, channel: int = 0, voltage: float = 0.0) -> fl
     sleep(0.5)
 
     try:
-        device.analog_output[channel].setup(
+        device.analog_output[input_channel].setup(
             function='dc',
             offset=voltage,
             amplitude=0.0,
@@ -36,7 +36,7 @@ def setVoltage(device: dwf.Device, channel: int = 0, voltage: float = 0.0) -> fl
         
         sleep(0.5)
 
-        return AD.measure(device, channel=channel)
+        return AD.measure(device, channel=output_channel)
         
     except dwf.WaveformsError as e:
         raise Exception(f"Waveforms Error: {e}")
@@ -49,14 +49,18 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     
     if len(args) < 2:
-        raise ValueError("Usage: python setVoltage.py <channel (0 or 1)> <voltage in volts>")
+        raise ValueError("Usage: python setVoltage.py <input channel (0 or 1)> <output channel (0 or 1)> <voltage in volts>")
     
     try:
-        channel = int(args[0])
-        voltage = float(args[1])
+        input_channel = int(args[0])
+        output_channel = int(args[1])
+        voltage = float(args[2])
         
-        if channel not in [0, 1]:
+        if input_channel not in [0, 1]:
             raise ValueError("Channel must be 0 (W1) or 1 (W2)")
+        
+        if output_channel not in [0, 1]:
+            raise ValueError("Channel must be 0 (1+) or 1 (2+)")
         
         with dwf.Device() as device:
             print(f"Found device: {device.name} ({device.serial_number})")
@@ -65,10 +69,10 @@ if __name__ == "__main__":
             sleep(0.5)
             
             # Set the voltage
-            success = setVoltage(device, channel, voltage)
+            success = setVoltage(device, input_channel, output_channel, voltage)
             
             if success:
-                print(f"Voltage set to {success}V on W{channel+1} output")
+                print(f"Voltage set to {success}V on W{input_channel+1} output")
                 sys.exit(0)
             else:
                 print("Failed to set voltage")
